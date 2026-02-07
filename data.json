@@ -1,0 +1,79 @@
+{
+    "songs": [
+        {
+            "id": "song_demo",
+            "name": "エレクトリカルパレード",
+            "sections": [
+                {
+                    "id": "s_demo_1",
+                    "name": "イントロ",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/in.wav",
+                    "type": "intro",
+                    "crossfade": true
+                },
+                {
+                    "id": "s_demo_2",
+                    "name": "ループ１",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/1.wav",
+                    "type": "loop",
+                    "crossfade": false
+                },
+                {
+                    "id": "s_demo_3",
+                    "name": "ループ２",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/2.wav",
+                    "type": "loop",
+                    "crossfade": true
+                },
+                {
+                    "id": "s_1770454949080_83ce8",
+                    "name": "ループ３",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/3.wav",
+                    "type": "loop",
+                    "crossfade": true
+                },
+                {
+                    "id": "s_1770453414573_6x45q",
+                    "name": "ループ４",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/4.wav",
+                    "type": "loop",
+                    "crossfade": true
+                },
+                {
+                    "id": "s_1770453423799_x6zzr",
+                    "name": "ループ５",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/5.wav",
+                    "type": "loop",
+                    "crossfade": false
+                },
+                {
+                    "id": "s_1770453432159_m511j",
+                    "name": "アウトロ",
+                    "file": "/Users/yuto/Documents/曲セクション/sound/out.wav",
+                    "type": "outro",
+                    "crossfade": true
+                }
+            ]
+        },
+        {
+            "id": "song_1770456207306",
+            "name": "Traffic",
+            "sections": [
+                {
+                    "id": "s_1770456207306_1",
+                    "name": "Intro",
+                    "file": "/Users/yuto/Documents/曲セクション/bayFM/in.wav",
+                    "type": "intro",
+                    "crossfade": false
+                },
+                {
+                    "id": "s_1770456207306_2",
+                    "name": "ループ１",
+                    "file": "/Users/yuto/Documents/曲セクション/bayFM/1.wav",
+                    "type": "loop",
+                    "crossfade": false
+                }
+            ]
+        }
+    ]
+}

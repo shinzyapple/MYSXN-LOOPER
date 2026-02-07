@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Section Looper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h2>MYSXN LOOPER</h2>
+            <button class="toggle-sidebar" id="close-sidebar">×</button>
+        </div>
+        <div id="song-list">
+            <!-- Songs will be injected here -->
+        </div>
+        <div style="padding: 16px;">
+            <button class="btn btn-secondary" style="width: 100%;" id="add-song-btn">+ 新曲を作成</button>
+        </div>
+    </aside>
+
+    <main>
+        <header class="top-bar">
+            <button class="toggle-sidebar" id="open-sidebar">☰</button>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="playback">再生</button>
+                <button class="tab-btn" data-tab="settings">設定</button>
+            </div>
+            <div style="width: 40px;"></div> <!-- Spacer -->
+        </header>
+
+        <section id="playback" class="tab-content active">
+            <div class="playback-container">
+                <div class="now-playing-card">
+                    <h1 id="current-song-name">曲名を選択してください</h1>
+                    <div class="section-indicator">
+                        <span id="state-badge" class="status-badge">READY</span>
+                        <span id="next-info-badge" class="status-badge" style="display:none">WAITING...</span>
+                    </div>
+                    <div class="countdown" id="time-remaining">--:--</div>
+
+                    <div class="seek-container" style="margin: 20px 0; padding: 0 40px;">
+                        <input type="range" id="seek-bar" min="0" max="100" value="0"
+                            style="width: 100%; cursor: pointer; accent-color: var(--accent-color);">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">
+                            <span id="current-time-display">0:00.0</span>
+                            <span id="duration-display">0:00.0</span>
+                        </div>
+                    </div>
+
+                    <div id="playback-controls">
+                        <button class="btn" id="play-btn"
+                            style="font-size: 1.2rem; padding: 16px 40px; border-radius: 40px;">
+                            再生開始
+                        </button>
+                        <button class="btn btn-secondary" id="stop-btn"
+                            style="display:none; padding: 16px 40px; border-radius: 40px;">
+                            停止
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-grid" id="section-grid">
+                    <!-- Sections will be injected here -->
+                </div>
+            </div>
+        </section>
+
+        <section id="settings" class="tab-content">
+            <div class="settings-container">
+                <div class="settings-card">
+                    <h3>曲の設定</h3>
+                    <div class="form-group">
+                        <label for="edit-song-name">曲名</label>
+                        <input type="text" id="edit-song-name" placeholder="曲の名前を入力">
+                    </div>
+
+                    <div id="section-config-list">
+                        <!-- Section configs will be injected here -->
+                    </div>
+
+                    <button class="btn btn-secondary" id="add-section-field">+ セクションを追加</button>
+                    <div
+                        style="margin-top: 24px; border-top: 1px solid var(--glass-border); padding-top: 24px; display: flex; gap: 12px;">
+                        <button class="btn" id="save-song-btn">保存する</button>
+                        <button class="btn btn-secondary" id="delete-song-btn">削除</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
