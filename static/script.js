@@ -25,6 +25,10 @@ const nextInfoBadge = document.getElementById('next-info-badge');
 
 // Initialization
 document.addEventListener('DOMContentLoaded', async () => {
+    // Show sidebar by default on large screens
+    if (window.innerWidth >= 769) {
+        sidebar.classList.remove('hidden');
+    }
     await fetchSongs();
     setupEventListeners();
 });
@@ -59,6 +63,11 @@ function selectSong(id) {
     renderSongList();
     const song = songs.find(s => s.id === id);
     document.getElementById('current-song-name').textContent = song.name;
+
+    // Close sidebar on mobile after selection
+    if (window.innerWidth < 769) {
+        sidebar.classList.add('hidden');
+    }
 
     // Reset playback state
     stopPlayback();

@@ -23,19 +23,23 @@ body {
     overflow: hidden;
     height: 100vh;
     display: flex;
+    position: relative;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
@@ -45,17 +49,37 @@ body {
     width: 280px;
     height: 100%;
     background: var(--sidebar-bg);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     border-right: 1px solid var(--glass-border);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    z-index: 1000;
 }
 
 #sidebar.hidden {
     transform: translateX(-100%);
-    position: absolute;
+}
+
+@media (max-width: 768px) {
+    #sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    #sidebar:not(.hidden)~main::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        backdrop-filter: blur(2px);
+    }
 }
 
 .sidebar-header {
@@ -70,6 +94,7 @@ body {
     font-weight: 700;
     background: linear-gradient(to right, var(--accent-color), var(--accent-secondary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -216,7 +241,9 @@ main {
 }
 
 @keyframes blink {
-    50% { opacity: 0.5; }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .countdown {
@@ -285,9 +312,10 @@ main {
     color: var(--text-secondary);
 }
 
-input[type="text"], select {
+input[type="text"],
+select {
     width: 100%;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
     color: white;
     padding: 12px;
@@ -312,7 +340,7 @@ input[type="text"], select {
 }
 
 .btn-secondary {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: white;
 }
 
@@ -320,7 +348,7 @@ input[type="text"], select {
     display: flex;
     gap: 12px;
     align-items: center;
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 12px;
@@ -330,12 +358,74 @@ input[type="text"], select {
     flex: 1;
 }
 
-/* Animations */
-.fade-in {
-    animation: fadeIn 0.5s ease-out;
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .top-bar {
+        padding: 0 16px;
+    }
+
+    .now-playing-card {
+        padding: 24px 16px;
+        margin-bottom: 24px;
+        border-radius: 16px;
+    }
+
+    .countdown {
+        font-size: 2.2rem;
+    }
+
+    .seek-container {
+        padding: 0 10px !important;
+    }
+
+    .section-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .section-card {
+        padding: 16px 10px;
+    }
+
+    #playback-controls .btn {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+
+    .tab-content {
+        padding: 16px;
+    }
+
+    .section-config-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .section-config-item>div {
+        flex: none !important;
+        width: 100%;
+    }
+
+    .section-config-item select,
+    .section-config-item input {
+        font-size: 16px;
+        /* Prevent iPhone zoom on focus */
+    }
+
+    .section-config-item .move-up,
+    .section-config-item .move-down {
+        display: none;
+    }
+
+    .section-config-item .picker-btn {
+        padding: 12px !important;
+    }
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+@media (min-width: 769px) {
+    #open-sidebar {
+        display: none;
+    }
 }
