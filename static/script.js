@@ -35,19 +35,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 let projectFolder = "";
 
+let isWebMode = false;
+let webAudioFiles = {}; // fileName -> Blob URL (temporary session storage)
+
 async function checkConfig() {
     try {
         const res = await fetch('/api/config');
         const data = await res.json();
-        projectFolder = data.project_folder;
-        updateProjectUI();
-        if (projectFolder) {
-            await fetchSongs();
+
+        if (data.is_vercel) {
+            isWebMode = true;
+            console.log('Running in Web Mode (Vercel)');
+            document.getElementById('select-project-btn').textContent = 'JSON読込';
+            document.getElementById('project-path-display').textContent = 'クラウド保存 (localStorage)';
         } else {
-            document.getElementById('current-song-name').textContent = 'プロジェクトフォルダを選択してください';
+            projectFolder = data.project_folder;
+            updateProjectUI();
         }
+
+        await fetchSongs();
     } catch (err) {
-        console.error('Failed to fetch config:', err);
+        console.error('Failed to fetch config, assuming Local Mode:', err);
+        await fetchSongs();
     }
 }
 
@@ -63,6 +72,30 @@ function updateProjectUI() {
 }
 
 async function selectProjectFolder() {
+    if (isWebMode) {
+        // In Web mode, this button acts as "Import JSON"
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = JSON.parse(event.target.result);
+                if (data.songs) {
+                    songs = data.songs;
+                    saveToLocalStorage();
+                    renderSongList();
+                    if (songs.length > 0) selectSong(songs[0].id);
+                    alert('JSONを読み込みました');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+        return;
+    }
+
     console.log('Select project folder clicked');
     const btn = document.getElementById('select-project-btn');
     const originalText = btn.textContent;
@@ -93,9 +126,17 @@ async function selectProjectFolder() {
 
 async function fetchSongs() {
     try {
-        const res = await fetch('/api/songs');
-        const data = await res.json();
-        songs = data.songs;
+        // Always try localStorage first in Web Mode
+        const localData = localStorage.getItem('mysxn_songs');
+        if (localData) {
+            songs = JSON.parse(localData).songs;
+            console.log('Loaded from localStorage');
+        } else {
+            const res = await fetch('/api/songs');
+            const data = await res.json();
+            songs = data.songs;
+        }
+
         renderSongList();
         if (songs.length > 0) {
             selectSong(songs[0].id);
@@ -103,6 +144,10 @@ async function fetchSongs() {
     } catch (err) {
         console.error('Failed to fetch songs:', err);
     }
+}
+
+function saveToLocalStorage() {
+    localStorage.setItem('mysxn_songs', JSON.stringify({ songs }));
 }
 
 function renderSongList() {
@@ -141,8 +186,17 @@ async function preloadAudio(song) {
     for (const section of song.sections) {
         if (section.file) {
             try {
-                console.log(`Loading audio: ${section.file}`);
-                const response = await fetch(`/audio?path=${encodeURIComponent(section.file)}`);
+                let url;
+                if (section.file.startsWith('blob:')) {
+                    url = section.file;
+                } else if (webAudioFiles[section.file]) {
+                    url = webAudioFiles[section.file];
+                } else {
+                    url = `/audio?path=${encodeURIComponent(section.file)}`;
+                }
+
+                console.log(`Loading audio: ${section.name} from ${url}`);
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
@@ -585,6 +639,23 @@ function addSectionConfig(sectionData = null) {
     const pickerBtn = div.querySelector('.picker-btn');
     const fileInput = div.querySelector('.conf-file');
     pickerBtn.onclick = async () => {
+        if (isWebMode) {
+            const fileInputElem = document.getElementById('web-audio-picker');
+            fileInputElem.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const blobUrl = URL.createObjectURL(file);
+                    // Store locally by file name for the session
+                    webAudioFiles[file.name] = blobUrl;
+                    fileInput.value = file.name; // Store name in config
+                    // In Web mode, we also should update the live buffer
+                    preloadAudio(songs.find(s => s.id === currentSongId));
+                }
+            };
+            fileInputElem.click();
+            return;
+        }
+
         try {
             pickerBtn.textContent = '...';
             pickerBtn.disabled = true;
@@ -631,17 +702,22 @@ async function saveSong() {
     song.sections = sections;
 
     try {
-        await fetch('/api/songs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ songs })
-        });
-        alert('保存しました');
+        saveToLocalStorage();
+
+        if (!isWebMode) {
+            await fetch('/api/songs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ songs })
+            });
+        }
+
+        alert('保存しました' + (isWebMode ? ' (ブラウザに保存されました)' : ''));
         renderSongList();
         renderSections();
         preloadAudio(song);
     } catch (e) {
-        alert('保存に失敗しました。プロジェクトフォルダが正しく選択されているか確認してください。');
+        alert('保存に失敗しました。');
     }
 }
 
