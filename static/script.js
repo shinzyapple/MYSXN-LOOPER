@@ -730,6 +730,7 @@ function addSectionConfig(sectionData = null) {
                     preloadAudio(songs.find(s => s.id === currentSongId));
                 }
             };
+            fileInputElem.value = ''; // Reset to ensure onchange fires even for same file
             fileInputElem.click();
             return;
         }
