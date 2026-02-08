@@ -17,6 +17,17 @@
             <h2>MYSXN LOOPER</h2>
             <button class="toggle-sidebar" id="close-sidebar">×</button>
         </div>
+        <div class="project-selector"
+            style="padding: 16px; border-bottom: 1px solid var(--glass-border); margin-bottom: 16px;">
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 8px;">PROJECT FOLDER</div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <div id="project-path-display"
+                    style="font-size: 0.75rem; color: var(--text-primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    フォルダ未選択</div>
+                <button class="btn btn-secondary" id="select-project-btn"
+                    style="padding: 4px 8px; font-size: 0.7rem;">選択</button>
+            </div>
+        </div>
         <div id="song-list">
             <!-- Songs will be injected here -->
         </div>

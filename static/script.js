@@ -29,9 +29,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.innerWidth >= 769) {
         sidebar.classList.remove('hidden');
     }
-    await fetchSongs();
+    await checkConfig();
     setupEventListeners();
 });
+
+let projectFolder = "";
+
+async function checkConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        projectFolder = data.project_folder;
+        updateProjectUI();
+        if (projectFolder) {
+            await fetchSongs();
+        } else {
+            document.getElementById('current-song-name').textContent = 'プロジェクトフォルダを選択してください';
+        }
+    } catch (err) {
+        console.error('Failed to fetch config:', err);
+    }
+}
+
+function updateProjectUI() {
+    const display = document.getElementById('project-path-display');
+    if (projectFolder) {
+        display.textContent = projectFolder.split('/').pop() || projectFolder;
+        display.title = projectFolder;
+    } else {
+        display.textContent = 'フォルダ未選択';
+        display.title = '';
+    }
+}
+
+async function selectProjectFolder() {
+    try {
+        const res = await fetch('/api/pick-folder');
+        const data = await res.json();
+        if (data.path) {
+            projectFolder = data.path;
+            await fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_folder: projectFolder })
+            });
+            updateProjectUI();
+            await fetchSongs();
+        }
+    } catch (err) {
+        console.error('Folder picker failed:', err);
+    }
+}
 
 async function fetchSongs() {
     try {
@@ -411,6 +459,7 @@ function setupEventListeners() {
     document.getElementById('save-song-btn').onclick = saveSong;
     document.getElementById('add-section-field').onclick = () => addSectionConfig();
     document.getElementById('delete-song-btn').onclick = deleteSong;
+    document.getElementById('select-project-btn').onclick = selectProjectFolder;
 
     // Seek Bar events
     const seekBar = document.getElementById('seek-bar');
@@ -531,7 +580,12 @@ function addSectionConfig(sectionData = null) {
             const res = await fetch('/api/pick-file');
             const data = await res.json();
             if (data.path) {
-                fileInput.value = data.path;
+                let finalPath = data.path;
+                // If the selected file is inside the project folder, make it relative
+                if (projectFolder && finalPath.startsWith(projectFolder)) {
+                    finalPath = './' + finalPath.slice(projectFolder.length).replace(/^\//, '');
+                }
+                fileInput.value = finalPath;
             }
         } catch (e) {
             console.error('File picker failed:', e);
@@ -574,7 +628,7 @@ async function saveSong() {
         renderSections();
         preloadAudio(song);
     } catch (e) {
-        alert('保存に失敗しました');
+        alert('保存に失敗しました。プロジェクトフォルダが正しく選択されているか確認してください。');
     }
 }
 

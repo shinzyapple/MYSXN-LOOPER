@@ -19,7 +19,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATA_FILE = "data.json"
+DATA_FILE_NAME = "data.json"
+SETTINGS_FILE = "settings.json" # App settings like last project folder
+
+def get_settings():
+    if not os.path.exists(SETTINGS_FILE):
+        return {"project_folder": ""}
+    with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except:
+            return {"project_folder": ""}
+
+def save_settings(settings):
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=4)
+
+def get_data_path():
+    settings = get_settings()
+    folder = settings.get("project_folder")
+    if folder and os.path.exists(folder):
+        return os.path.join(folder, DATA_FILE_NAME)
+    return None
 
 class Section(BaseModel):
     id: str
@@ -37,14 +58,35 @@ class AppData(BaseModel):
     songs: List[Song]
 
 def load_data():
-    if not os.path.exists(DATA_FILE):
+    path = get_data_path()
+    if not path or not os.path.exists(path):
         return {"songs": []}
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    with open(path, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except:
+            return {"songs": []}
 
 def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+    path = get_data_path()
+    if not path:
+        # If no project folder, we might want to prompt or fallback
+        # But for now, let's assume UI handles this.
+        return False
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
+    return True
+
+@app.get("/api/config")
+def get_config():
+    return get_settings()
+
+@app.post("/api/config")
+def set_config(data: dict):
+    settings = get_settings()
+    settings.update(data)
+    save_settings(settings)
+    return {"status": "success"}
 
 @app.get("/api/songs")
 def get_songs():
@@ -52,8 +94,28 @@ def get_songs():
 
 @app.post("/api/songs")
 def save_songs(data: AppData):
-    save_data(data.model_dump())
+    success = save_data(data.model_dump())
+    if not success:
+        raise HTTPException(status_code=400, detail="Project folder not set")
     return {"status": "success"}
+
+@app.get("/api/pick-folder")
+def pick_folder():
+    import subprocess
+    script = '''
+    set theFolder to (choose folder with prompt "プロジェクトフォルダを選択してください")
+    return "PATH_RESULT:" & (POSIX path of theFolder)
+    '''
+    try:
+        process = subprocess.Popen(['osascript', '-e', script], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        stdout, stderr = process.communicate()
+        for line in stdout.splitlines():
+            if "PATH_RESULT:" in line:
+                folder_path = line.split("PATH_RESULT:")[1].strip()
+                return {"path": folder_path}
+        return {"path": ""}
+    except Exception as e:
+        return {"path": ""}
 
 @app.get("/api/pick-file")
 def pick_file():
@@ -92,8 +154,20 @@ def index():
 # For now, let's assume files are accessible via /audio?path=...
 @app.get("/audio")
 def get_audio(path: str):
+    # Try absolute path first
     if os.path.exists(path):
         return FileResponse(path)
+    
+    # Try relative to project folder
+    settings = get_settings()
+    folder = settings.get("project_folder")
+    if folder:
+        # If the path starts with ./ remove it
+        clean_path = path[2:] if path.startswith("./") else path
+        full_path = os.path.join(folder, clean_path)
+        if os.path.exists(full_path):
+            return FileResponse(full_path)
+            
     raise HTTPException(status_code=404, detail="File not found")
 
 if __name__ == "__main__":
