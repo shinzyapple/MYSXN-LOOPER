@@ -167,6 +167,18 @@ function saveToLocalStorage() {
     localStorage.setItem('mysxn_songs', JSON.stringify({ songs }));
 }
 
+function exportSongsToJSON() {
+    const dataStr = JSON.stringify({ songs }, null, 4);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = 'mysxn_project.json';
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+}
+
 function renderSongList() {
     songListEl.innerHTML = '';
     songs.forEach(song => {
@@ -541,6 +553,7 @@ function setupEventListeners() {
     document.getElementById('add-section-field').onclick = () => addSectionConfig();
     document.getElementById('delete-song-btn').onclick = deleteSong;
     document.getElementById('select-project-btn').onclick = selectProjectFolder;
+    document.getElementById('export-json-btn').onclick = exportSongsToJSON;
 
     // Seek Bar events
     const seekBar = document.getElementById('seek-bar');
