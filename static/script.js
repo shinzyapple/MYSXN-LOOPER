@@ -15,6 +15,40 @@ let seekOffset = 0; // Cumulative duration from start of buffer when seeked
 let timerInterval = null;
 let isSeeking = false;
 
+// IndexedDB settings for Web Mode persistence
+const DB_NAME = "MYSXN_Audio_Cache";
+const STORE_NAME = "audio_blobs";
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function saveDB(name, blob) {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(blob, name);
+    return new Promise((resolve) => tx.oncomplete = resolve);
+}
+
+async function getDB(name) {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const request = tx.objectStore(STORE_NAME).get(name);
+    return new Promise((resolve) => {
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
 // UI Elements
 const sidebar = document.getElementById('sidebar');
 const songListEl = document.getElementById('song-list');
@@ -216,11 +250,23 @@ async function preloadAudio(song) {
         if (section.file) {
             try {
                 let url;
+                let blob;
+
                 if (section.file.startsWith('blob:')) {
                     url = section.file;
                 } else if (webAudioFiles[section.file]) {
                     url = webAudioFiles[section.file];
-                } else {
+                } else if (isWebMode) {
+                    // Try to restore from IndexedDB
+                    blob = await getDB(section.file);
+                    if (blob) {
+                        url = URL.createObjectURL(blob);
+                        webAudioFiles[section.file] = url;
+                        console.log(`Restored ${section.name} from cache`);
+                    }
+                }
+
+                if (!url) {
                     url = `/audio?path=${encodeURIComponent(section.file)}`;
                 }
 
@@ -671,14 +717,16 @@ function addSectionConfig(sectionData = null) {
     pickerBtn.onclick = async () => {
         if (isWebMode) {
             const fileInputElem = document.getElementById('web-audio-picker');
-            fileInputElem.onchange = (e) => {
+            fileInputElem.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     const blobUrl = URL.createObjectURL(file);
-                    // Store locally by file name for the session
+                    // Store in session
                     webAudioFiles[file.name] = blobUrl;
-                    fileInput.value = file.name; // Store name in config
-                    // In Web mode, we also should update the live buffer
+                    // Store in persistent IndexedDB cache
+                    await saveDB(file.name, file);
+
+                    fileInput.value = file.name;
                     preloadAudio(songs.find(s => s.id === currentSongId));
                 }
             };
