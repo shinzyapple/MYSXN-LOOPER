@@ -29,8 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.innerWidth >= 769) {
         sidebar.classList.remove('hidden');
     }
+    setupEventListeners(); // Bind events first
     await checkConfig();
-    setupEventListeners();
 });
 
 let projectFolder = "";
@@ -63,9 +63,15 @@ function updateProjectUI() {
 }
 
 async function selectProjectFolder() {
+    console.log('Select project folder clicked');
+    const btn = document.getElementById('select-project-btn');
+    const originalText = btn.textContent;
     try {
+        btn.textContent = '...';
+        btn.disabled = true;
         const res = await fetch('/api/pick-folder');
         const data = await res.json();
+        console.log('Folder picker result:', data);
         if (data.path) {
             projectFolder = data.path;
             await fetch('/api/config', {
@@ -78,6 +84,10 @@ async function selectProjectFolder() {
         }
     } catch (err) {
         console.error('Folder picker failed:', err);
+        alert('フォルダの選択に失敗しました');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
 
@@ -577,6 +587,7 @@ function addSectionConfig(sectionData = null) {
     pickerBtn.onclick = async () => {
         try {
             pickerBtn.textContent = '...';
+            pickerBtn.disabled = true;
             const res = await fetch('/api/pick-file');
             const data = await res.json();
             if (data.path) {
@@ -589,8 +600,10 @@ function addSectionConfig(sectionData = null) {
             }
         } catch (e) {
             console.error('File picker failed:', e);
+            alert('ファイルの選択に失敗しました');
         } finally {
             pickerBtn.textContent = '選択';
+            pickerBtn.disabled = false;
         }
     };
 
