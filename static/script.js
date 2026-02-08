@@ -40,22 +40,35 @@ let webAudioFiles = {}; // fileName -> Blob URL (temporary session storage)
 
 async function checkConfig() {
     try {
+        // Automatically assume Web Mode if running on vercel.app or similar
+        const isVercelLocal = window.location.hostname.includes('vercel.app');
+
         const res = await fetch('/api/config');
+        if (!res.ok) throw new Error('Config API unreachable');
         const data = await res.json();
 
-        if (data.is_vercel) {
+        if (data.is_vercel || isVercelLocal) {
             isWebMode = true;
-            console.log('Running in Web Mode (Vercel)');
+            console.log('Running in Web Mode (Cloud)');
             document.getElementById('select-project-btn').textContent = 'JSON読込';
-            document.getElementById('project-path-display').textContent = 'クラウド保存 (localStorage)';
+            document.getElementById('project-path-display').textContent = 'Web保存 (localStorage)';
+            document.getElementById('current-song-name').textContent = 'JSONファイルを読み込むか、曲を作成してください';
         } else {
             projectFolder = data.project_folder;
             updateProjectUI();
+            if (!projectFolder) {
+                document.getElementById('current-song-name').textContent = 'プロジェクトフォルダを選択してください';
+            }
         }
 
         await fetchSongs();
     } catch (err) {
-        console.error('Failed to fetch config, assuming Local Mode:', err);
+        console.error('Failed to detect environment, using Local fallback:', err);
+        // If we can't even reach the API, we're likely in a statically served environment (Web Mode)
+        if (window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost') {
+            isWebMode = true;
+            document.getElementById('select-project-btn').textContent = 'JSON読込';
+        }
         await fetchSongs();
     }
 }
@@ -114,10 +127,14 @@ async function selectProjectFolder() {
             });
             updateProjectUI();
             await fetchSongs();
+        } else if (data.detail) {
+            alert('サーバーエラー: ' + data.detail + '\n\n※Vercel環境ではフォルダ選択は使用できません。');
+        } else if (data.error && data.error !== 'No path selected') {
+            alert('エラー: ' + data.error);
         }
     } catch (err) {
         console.error('Folder picker failed:', err);
-        alert('フォルダの選択に失敗しました');
+        alert('通信エラーが発生しました。ローカルサーバーが起動しているか確認してください。');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;

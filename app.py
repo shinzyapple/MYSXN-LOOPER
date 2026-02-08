@@ -102,41 +102,52 @@ def save_songs(data: AppData):
 @app.get("/api/pick-folder")
 def pick_folder():
     import subprocess
+    # Activate the app to ensure dialog comes to front
     script = '''
-    set theFolder to (choose folder with prompt "プロジェクトフォルダを選択してください")
-    return "PATH_RESULT:" & (POSIX path of theFolder)
+    tell application "System Events"
+        activate
+        set theFolder to (choose folder with prompt "プロジェクトフォルダを選択してください")
+        return "PATH_RESULT:" & (POSIX path of theFolder)
+    end tell
     '''
     try:
         process = subprocess.Popen(['osascript', '-e', script], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         stdout, stderr = process.communicate()
+        if stderr:
+             print(f"OSAScript Error: {stderr}")
+             return {"path": "", "error": stderr}
         for line in stdout.splitlines():
             if "PATH_RESULT:" in line:
                 folder_path = line.split("PATH_RESULT:")[1].strip()
                 return {"path": folder_path}
-        return {"path": ""}
+        return {"path": "", "error": "No path selected"}
     except Exception as e:
-        return {"path": ""}
+        print(f"Server Error: {str(e)}")
+        return {"path": "", "error": str(e)}
 
 @app.get("/api/pick-file")
 def pick_file():
     import subprocess
-    # Use AppleScript to pick a file and return its POSIX path with a clear marker.
     script = '''
-    set theFile to (choose file with prompt "音声ファイルを選択してください" of type {"public.audio", "public.mp3", "com.apple.m4a-audio", "public.wav-audio"})
-    return "PATH_RESULT:" & (POSIX path of theFile)
+    tell application "System Events"
+        activate
+        set theFile to (choose file with prompt "音声ファイルを選択してください" of type {"public.audio", "public.mp3", "com.apple.m4a-audio", "public.wav-audio"})
+        return "PATH_RESULT:" & (POSIX path of theFile)
+    end tell
     '''
     try:
         process = subprocess.Popen(['osascript', '-e', script], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         stdout, stderr = process.communicate()
-        
-        # Look for our marker in the output
+        if stderr:
+            print(f"OSAScript Error: {stderr}")
+            return {"path": "", "error": stderr}
         for line in stdout.splitlines():
             if "PATH_RESULT:" in line:
                 file_path = line.split("PATH_RESULT:")[1].strip()
                 return {"path": file_path}
-        return {"path": ""}
+        return {"path": "", "error": "No file selected"}
     except Exception as e:
-        return {"path": ""}
+        return {"path": "", "error": str(e)}
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
