@@ -177,15 +177,34 @@ async function selectProjectFolder() {
 
 async function fetchSongs() {
     try {
-        // Always try localStorage first in Web Mode
-        const localData = localStorage.getItem('mysxn_songs');
-        if (localData) {
-            songs = JSON.parse(localData).songs;
-            console.log('Loaded from localStorage');
+        if (isWebMode) {
+            const localData = localStorage.getItem('mysxn_songs');
+            if (localData) {
+                songs = JSON.parse(localData).songs;
+                console.log('Loaded from localStorage (Web Mode)');
+            } else {
+                const res = await fetch('/api/songs');
+                if (res.ok) {
+                    const data = await res.json();
+                    songs = data.songs;
+                }
+            }
         } else {
+            console.log('Fetching from API (Local Mode)');
             const res = await fetch('/api/songs');
-            const data = await res.json();
-            songs = data.songs;
+            if (res.ok) {
+                const data = await res.json();
+                songs = data.songs;
+                // Keep localStorage in sync for offline fallback
+                saveToLocalStorage();
+            } else {
+                // Fallback to localStorage if API fails
+                const localData = localStorage.getItem('mysxn_songs');
+                if (localData) {
+                    songs = JSON.parse(localData).songs;
+                    console.log('API failed, loaded from localStorage');
+                }
+            }
         }
 
         renderSongList();
@@ -805,11 +824,15 @@ async function deleteSong() {
     songs = songs.filter(s => s.id !== currentSongId);
     currentSongId = songs.length > 0 ? songs[0].id : null;
 
-    await fetch('/api/songs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ songs })
-    });
+    saveToLocalStorage();
+
+    if (!isWebMode) {
+        await fetch('/api/songs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ songs })
+        });
+    }
 
     if (currentSongId) selectSong(currentSongId);
     else location.reload();
